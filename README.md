@@ -76,7 +76,7 @@ It works the same as Pytorch built-in layer builder, currently it only builds VG
 for example
 
 ```python
-import models.vgg as vgg
+import models.maker as vgg
 
 encoder_core = vgg.make_layers([64, 'M', 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'])
 

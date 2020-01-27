@@ -70,20 +70,37 @@ class Identity(nn.Module):
 
 
 class Unit(nn.Module):
-    def __init__(self, in_channels, out_channels, core, batch_norm=True):
+    def __init__(self, in_channels, out_channels, core, type='conv', batch_norm=True):
         super().__init__()
+        self.type = type
+
         core_in_channels, core_out_channels = self._core_channels(core)
 
-        in_block = [nn.ReplicationPad2d(1), nn.Conv2d(in_channels, core_in_channels, kernel_size=3, stride=1)]
+        if type == 'conv':
+            in_block = [nn.ReplicationPad2d(1), nn.Conv2d(in_channels, core_in_channels, kernel_size=3, stride=1)]
+
+        if type == 'fc':
+            in_block = [nn.Linear(in_channels, core_in_channels)]
+
         if batch_norm:
-            in_block += [nn.BatchNorm2d(core_in_channels)]
-        in_block += [nn.LeakyReLU(inplace=True)]
+            if type == 'conv':
+                in_block += [nn.BatchNorm2d(core_in_channels)]
+            if type == 'fc':
+                in_block += [nn.BatchNorm1d(core_in_channels)]
+
+        in_block += [nn.ReLU(inplace=True)]
+
         self.in_block = nn.Sequential(*in_block)
 
         self.core = core
 
-        out_block = [nn.Conv2d(core_out_channels, out_channels, kernel_size=1, stride=1)]
-        out_block += [nn.LeakyReLU(inplace=True)]
+        if type == 'conv':
+            out_block = [nn.Conv2d(core_out_channels, out_channels, kernel_size=1, stride=1)]
+
+        if type == 'fc':
+            out_block = [nn.Linear(core_out_channels, out_channels)]
+
+        out_block += [nn.ReLU(inplace=True)]
         self.out_block = nn.Sequential(*out_block)
 
     def forward(self, x):
@@ -165,14 +182,6 @@ class Coords(nn.Module):
         hm = torch.linspace(0, 1, h, dtype=x.dtype, device=x.device).reshape(1, 1, h, 1).repeat(b, 1, 1, w)
         wm = torch.linspace(0, 1, w, dtype=x.dtype, device=x.device).reshape(1, 1, 1, w).repeat(b, 1, h, 1)
         return torch.cat((x, hm, wm), dim=1)
-
-
-class Transporter(nn.Module):
-    def __init__(self):
-        super().__init__()
-
-    def forward(self, phi_xs, heta_xs, phi_xt, heta_xt):
-        return phi_xs * (1 - heta_xs) * (1 - heta_xt) + phi_xs * heta_xt
 
 
 def load_weights(module, weights):

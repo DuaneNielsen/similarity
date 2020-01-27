@@ -15,7 +15,7 @@ model_urls = {
 
 
 def make_layers(cfg, batch_norm=True, extra_in_channels=0,
-                nonlinearity=None, nonlinearity_kwargs=None, co_ord_conv=False):
+                nonlinearity=None, nonlinearity_kwargs=None, type='conv'):
     nonlinearity_kwargs = {} if nonlinearity_kwargs is None else nonlinearity_kwargs
     nonlinearity = nn.ReLU(inplace=True) if nonlinearity is None else nonlinearity(**nonlinearity_kwargs)
     layers = []
@@ -28,12 +28,16 @@ def make_layers(cfg, batch_norm=True, extra_in_channels=0,
         elif v == 'L':
             layers += [knn.ActivationMap()]
         else:
-            layers += [nn.ReplicationPad2d(1)]
-            if co_ord_conv:
-                layers += [knn.Coords()]
-            layers += [nn.Conv2d(in_channels + 2 * co_ord_conv, v, kernel_size=3)]
+            if type == 'conv':
+                layers += [nn.ReplicationPad2d(1)]
+                layers += [nn.Conv2d(in_channels, v, kernel_size=3)]
+            if type == 'fc':
+                layers += [nn.Linear(in_channels, v)]
             if batch_norm:
-                layers += [nn.BatchNorm2d(v)]
+                if type == 'conv':
+                    layers += [nn.BatchNorm2d(v)]
+                if type == 'fc':
+                    layers += [nn.BatchNorm1d(v)]
             layers += [nonlinearity]
 
             in_channels = v
