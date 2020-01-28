@@ -1,0 +1,11 @@
+dataset:
+  name: mnist
+
+model:
+  name: mnist_small
+  type: fc
+  encoder: [784, 12, 12, 12, 10]
+  decoder: [10, 12, 12, 12, 784]
+
+epochs: 100
+batchsize: 32
